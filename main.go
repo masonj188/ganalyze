@@ -1,20 +1,22 @@
 package main
 
 import (
-	"debug/pe"
 	"fmt"
 	"log"
+	"os"
+
+	"github.com/masonj188/binanalysis/ganalyze/pinfo"
 )
 
 func main() {
-	exe, err := pe.Open("rufus-3.8.exe")
+	f, err := os.Open(os.Args[1])
 	if err != nil {
 		log.Fatalln("Error opening executable: ", err)
 	}
-	defer exe.Close()
-	fmt.Println(exe)
+	defer f.Close()
 
-	imports, err := exe.ImportedLibraries()
-	fmt.Println("Imports: ", imports)
+	props := pinfo.NewProps(f)
+
+	fmt.Println(*props)
 
 }
