@@ -32,5 +32,31 @@
 				<td>{{ .FSize }} bytes</td>
 			</tr>
 		</table>
+
+	<h2>Sections</h2>
+		<table>
+			<tr>
+				<th>Name</th>
+				<th>Virtual Address</th>
+				<th>Virtual Size</th>
+				<th>Raw Size</th>
+			</tr>
+			{{ range .Sections }}
+			<tr>
+				<td>{{ .SectionHeader.Name }}</td>
+				<td>{{ .SectionHeader.VirtualAddress }}</td>
+				<td>{{ .SectionHeader.VirtualSize }}</td>
+				<td>{{ .SectionHeader.Size }}</td>
+			</tr>
+			{{ end }}
+		</table>
+	<h2>Symbols</h2>
+		<ul>
+			{{ range .Symbols }}
+			<li>{{.}}</li>
+			{{ end }}
+		</ul>
+			
+		
 </body>
 </html>

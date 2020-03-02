@@ -21,4 +21,6 @@ func main() {
 		fmt.Printf("Error exporting html doc for %s\n", props.Name)
 	}
 
+	//fmt.Printf("%#v", props)
+
 }

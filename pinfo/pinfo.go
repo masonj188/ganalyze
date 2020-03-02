@@ -30,9 +30,12 @@ type BasicProps struct {
 	SHA256 string
 	//Imphash      string
 	//SSDEEP       string
-	FileType string
-	Magic    string
-	FSize    string
+	FileType  string
+	Magic     string
+	FSize     string
+	Libraries []string
+	Symbols   []string
+	Sections  []pe.Section
 }
 
 // NewProps returns a pointer to a basicProps struct
@@ -43,6 +46,9 @@ func NewProps(file *os.File) *BasicProps {
 	props.fillFileType(file)
 	props.fillMagic(file)
 	props.fillFileSize(file)
+	props.fillLibraries(file)
+	props.fillSymbols(file)
+	props.fillSections(file)
 
 	return &props
 }
@@ -113,6 +119,40 @@ func (p *BasicProps) fillFileSize(f *os.File) {
 		log.Fatalf("Error calling stat on file: %s \n", err)
 	}
 	p.FSize = strconv.FormatInt(info.Size(), 10)
+}
+
+func (p *BasicProps) fillSymbols(f *os.File) {
+	exe, err := pe.NewFile(f)
+	if err != nil {
+		fmt.Println("Error converting to PE in fillSymbols")
+	}
+
+	p.Symbols, err = exe.ImportedSymbols()
+	if err != nil {
+		fmt.Println("Error getting imported symbols")
+	}
+}
+
+func (p *BasicProps) fillLibraries(f *os.File) {
+	exe, err := pe.NewFile(f)
+	if err != nil {
+		fmt.Println("Error converting to PE in fillImports")
+	}
+
+	p.Libraries, err = exe.ImportedLibraries()
+	if err != nil {
+		fmt.Println("Error getting imported libraries")
+	}
+}
+
+func (p *BasicProps) fillSections(f *os.File) {
+	exe, err := pe.NewFile(f)
+	if err != nil {
+		fmt.Println("Error converting to pe in fillSections")
+	}
+	for _, val := range exe.Sections {
+		p.Sections = append(p.Sections, *val)
+	}
 }
 
 func (p *BasicProps) String() string {
