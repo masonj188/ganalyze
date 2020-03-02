@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>{{ .Name }}</title>
+</head>
+<body>
+	<h1>{{ .Name }}</h1>
+	<h2>Basic Properties</h2>
+		<table>
+			<tr>
+				<td><b>MD5:</b></td>
+				<td>{{ .MD5 }}</td>
+			</tr>
+			<tr>
+				<td><b>SHA1:</b></td>
+				<td>{{ .SHA1 }}</td>
+			</tr>
+			<tr>
+				<td><b>SHA256:</b></td>
+				<td>{{ .SHA256 }}</td>
+			</tr>
+			<tr>
+				<td><b>File Type:</b></td>
+				<td>{{ .FileType }}</td>
+			</tr>
+			<tr>
+				<td><b>Magic:</b></td>
+				<td>{{ .Magic }}</td>
+			</tr>
+			<tr>
+				<td><b>File Size:</b></td>
+				<td>{{ .FSize }} bytes</td>
+			</tr>
+		</table>
+</body>
+</html>

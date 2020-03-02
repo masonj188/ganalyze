@@ -16,7 +16,9 @@ func main() {
 	defer f.Close()
 
 	props := pinfo.NewProps(f)
-
-	fmt.Println(*props)
+	err = props.ExportHTML()
+	if err != nil {
+		fmt.Printf("Error exporting html doc for %s\n", props.Name)
+	}
 
 }

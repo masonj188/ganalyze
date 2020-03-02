@@ -7,6 +7,7 @@ import (
 	"debug/pe"
 	"encoding/hex"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
 	"os"
@@ -23,6 +24,7 @@ const (
 
 // BasicProps contains basic data about a PE file
 type BasicProps struct {
+	Name   string
 	MD5    string
 	SHA1   string
 	SHA256 string
@@ -36,6 +38,7 @@ type BasicProps struct {
 // NewProps returns a pointer to a basicProps struct
 func NewProps(file *os.File) *BasicProps {
 	props := BasicProps{}
+	props.Name = file.Name()
 	props.fillHashes(file)
 	props.fillFileType(file)
 	props.fillMagic(file)
@@ -112,6 +115,16 @@ func (p *BasicProps) fillFileSize(f *os.File) {
 	p.FSize = strconv.FormatInt(info.Size(), 10)
 }
 
-func (p BasicProps) String() string {
-	return fmt.Sprintf("MD5 Hash: \t%s\nSHA1 Hash: \t%s\nSHA256 Hash: \t%s\nFile Type: \t%s\nMagic: \t\t%s\nFile Size: \t%s\n", p.MD5, p.SHA1, p.SHA256, p.FileType, p.Magic, p.FSize)
+func (p *BasicProps) String() string {
+	return fmt.Sprintf("---Basic Info---\n%-15s%s\n%-15s%s\n%-15s%s\n%-15s%s\n%-15s%s\n%-15s%s", "MD5 Hash: ", p.MD5, "SHA1 Hash: ", p.SHA1, "SHA256 Hash: ", p.SHA256, "File Type: ", p.FileType, "Magic: ", p.Magic, "File Size: ", p.FSize)
+}
+
+func (p *BasicProps) ExportHTML() error {
+	t, err := template.ParseFiles("binpage.html")
+	if err != nil {
+		return err
+	}
+
+	t.ExecuteTemplate(os.Stdout, "binpage.html", *p)
+	return nil
 }
