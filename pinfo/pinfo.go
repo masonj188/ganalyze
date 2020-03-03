@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"strconv"
 )
 
@@ -36,10 +37,11 @@ type BasicProps struct {
 	Libraries []string
 	Symbols   []string
 	Sections  []pe.Section
+	ModelRes  bool
 }
 
 // NewProps returns a pointer to a basicProps struct
-func NewProps(file *os.File) *BasicProps {
+func NewProps(file *os.File, useModel bool) *BasicProps {
 	props := BasicProps{}
 	props.Name = file.Name()
 	props.fillHashes(file)
@@ -49,6 +51,9 @@ func NewProps(file *os.File) *BasicProps {
 	props.fillLibraries(file)
 	props.fillSymbols(file)
 	props.fillSections(file)
+	if useModel {
+		props.fillFromModel(file)
+	}
 
 	return &props
 }
@@ -152,6 +157,22 @@ func (p *BasicProps) fillSections(f *os.File) {
 	}
 	for _, val := range exe.Sections {
 		p.Sections = append(p.Sections, *val)
+	}
+}
+
+func (p *BasicProps) fillFromModel(f *os.File) {
+	pmodel := exec.Command("python3", "prediction.py", f.Name())
+	out, err := pmodel.Output()
+	if err != nil {
+		fmt.Println("Error running model")
+	}
+	switch res, _ := strconv.Atoi(string(out)); res {
+	case 0:
+		p.ModelRes = false
+	case 1:
+		p.ModelRes = true
+	case -1:
+		fmt.Println("Error from the model")
 	}
 }
 
