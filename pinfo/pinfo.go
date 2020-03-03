@@ -31,13 +31,14 @@ type BasicProps struct {
 	SHA256 string
 	//Imphash      string
 	//SSDEEP       string
-	FileType  string
-	Magic     string
-	FSize     string
-	Libraries []string
-	Symbols   []string
-	Sections  []pe.Section
-	ModelRes  bool
+	FileType   string
+	Magic      string
+	FSize      string
+	Libraries  []string
+	Symbols    []string
+	Sections   []pe.Section
+	UsingModel bool
+	ModelRes   bool
 }
 
 // NewProps returns a pointer to a basicProps struct
@@ -51,6 +52,7 @@ func NewProps(file *os.File, useModel bool) *BasicProps {
 	props.fillLibraries(file)
 	props.fillSymbols(file)
 	props.fillSections(file)
+	props.UsingModel = useModel
 	if useModel {
 		props.fillFromModel(file)
 	}

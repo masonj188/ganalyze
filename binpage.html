@@ -5,6 +5,9 @@
 </head>
 <body>
 	<h1>{{ .Name }}</h1>
+	{{ if .ModelRes }}
+	<h2>Determined Malicious:{{ .ModelRes }}</h2>
+	{{ end }}
 	<h2>Basic Properties</h2>
 		<table>
 			<tr>
