@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 )
 
@@ -44,7 +45,7 @@ type BasicProps struct {
 // NewProps returns a pointer to a basicProps struct
 func NewProps(file *os.File, useModel bool) *BasicProps {
 	props := BasicProps{}
-	props.Name = file.Name()
+	props.Name = filepath.Base(file.Name())
 	props.fillHashes(file)
 	props.fillFileType(file)
 	props.fillMagic(file)
@@ -163,12 +164,18 @@ func (p *BasicProps) fillSections(f *os.File) {
 }
 
 func (p *BasicProps) fillFromModel(f *os.File) {
-	pmodel := exec.Command("python3", "prediction.py", f.Name())
+	fullPath, err := filepath.Abs(f.Name())
+	pmodel := exec.Command("python3", "prediction.py", fullPath)
+	pmodel.Dir = "python"
 	out, err := pmodel.Output()
 	if err != nil {
-		fmt.Println("Error running model")
+		fmt.Println("Error running model", err)
 	}
-	switch res, _ := strconv.Atoi(string(out)); res {
+	res, err := strconv.Atoi(string(out[:1]))
+	if err != nil {
+		fmt.Println("Error converting stdout to an int", err)
+	}
+	switch res {
 	case 0:
 		p.ModelRes = false
 	case 1:
@@ -182,12 +189,30 @@ func (p *BasicProps) String() string {
 	return fmt.Sprintf("---Basic Info---\n%-15s%s\n%-15s%s\n%-15s%s\n%-15s%s\n%-15s%s\n%-15s%s", "MD5 Hash: ", p.MD5, "SHA1 Hash: ", p.SHA1, "SHA256 Hash: ", p.SHA256, "File Type: ", p.FileType, "Magic: ", p.Magic, "File Size: ", p.FSize)
 }
 
-func (p *BasicProps) ExportHTML() error {
-	t, err := template.ParseFiles("binpage.html")
+func (p *BasicProps) ExportHTML(outfilePath string) error {
+	t, err := template.ParseFiles("binpage.html.template")
 	if err != nil {
 		return err
 	}
-
-	t.ExecuteTemplate(os.Stdout, "binpage.html", *p)
+	outfile := filepath.Base(outfilePath)
+	path := filepath.Dir(outfilePath)
+	os.MkdirAll(path, 0755)
+	bpath, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Error getting working directory")
+	}
+	os.Chdir(path)
+	f, err := os.Create(outfile)
+	if err != nil {
+		fmt.Println("Error creating file", err)
+		return err
+	}
+	defer f.Close()
+	err = t.ExecuteTemplate(f, "binpage.html.template", *p)
+	if err != nil {
+		fmt.Println("Error executing template", err)
+		return err
+	}
+	os.Chdir(bpath)
 	return nil
 }

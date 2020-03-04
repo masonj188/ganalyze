@@ -3,8 +3,8 @@ import lightgbm as lgb
 import sys
 
 def main():
-    lgbm_model = lgb.Booster(model_file="ember_model_2017.txt")
-    #lgbm_model = lgb.Booster(model_file="ember_model_2018.txt")
+    #lgbm_model = lgb.Booster(model_file="ember_model_2017.txt")
+    lgbm_model = lgb.Booster(model_file="ember_model_2018.txt")
 
     try:
         file = sys.argv[1]
