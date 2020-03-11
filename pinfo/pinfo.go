@@ -43,29 +43,52 @@ type BasicProps struct {
 }
 
 // NewProps returns a pointer to a basicProps struct
-func NewProps(file *os.File, useModel bool) *BasicProps {
+func NewProps(file *os.File, useModel bool) (*BasicProps, error) {
 	props := BasicProps{}
 	props.Name = filepath.Base(file.Name())
-	props.fillHashes(file)
-	props.fillFileType(file)
-	props.fillMagic(file)
-	props.fillFileSize(file)
-	props.fillLibraries(file)
-	props.fillSymbols(file)
-	props.fillSections(file)
-	props.UsingModel = useModel
-	if useModel {
-		props.fillFromModel(file)
+	err := props.fillHashes(file)
+	if err != nil {
+		return nil, err
 	}
+	err = props.fillFileType(file)
+	if err != nil {
+		return nil, err
+	}
+	err = props.fillMagic(file)
+	if err != nil {
+		return nil, err
+	}
+	err = props.fillFileSize(file)
+	if err != nil {
+		return nil, err
+	}
+	err = props.fillLibraries(file)
+	if err != nil {
+		return nil, err
+	}
+	err = props.fillSymbols(file)
+	if err != nil {
+		return nil, err
+	}
+	err = props.fillSections(file)
+	if err != nil {
+		return nil, err
+	}
+	/*
+		props.UsingModel = useModel
+		if useModel {
+			props.fillFromModel(file)
+		}
+	*/
 
-	return &props
+	return &props, nil
 }
 
-func (p *BasicProps) fillHashes(file *os.File) {
+func (p *BasicProps) fillHashes(file *os.File) error {
 	mh := md5.New()
 	_, err := io.Copy(mh, file)
 	if err != nil {
-		log.Fatalln("Error copying file into md5 hash:", err)
+		return err
 	}
 	mhbytes := mh.Sum(nil)
 	p.MD5 = hex.EncodeToString(mhbytes[:])
@@ -75,6 +98,7 @@ func (p *BasicProps) fillHashes(file *os.File) {
 	_, err = io.Copy(s1h, file)
 	if err != nil {
 		log.Fatalln("error copying file into sha1 hash:", err)
+		return fmt.Errorf("Error copying file into sha1 hash: %v", err)
 	}
 	s1hbytes := s1h.Sum(nil)
 	p.SHA1 = hex.EncodeToString(s1hbytes)
@@ -83,84 +107,105 @@ func (p *BasicProps) fillHashes(file *os.File) {
 	file.Seek(0, 0)
 	_, err = io.Copy(s2h, file)
 	if err != nil {
-		log.Fatalln("Error copying file into sha256 hash:", err)
+		return fmt.Errorf("Error copying file into sha256 hash: %v", err)
 	}
 	s2hbytes := s2h.Sum(nil)
 	p.SHA256 = hex.EncodeToString(s2hbytes)
 
 	file.Seek(0, 0)
+	return nil
 }
 
-func (p *BasicProps) fillFileType(file *os.File) {
+func (p *BasicProps) fillFileType(file *os.File) error {
 	exe, err := pe.NewFile(file)
 	if err != nil {
-		log.Fatalln("Error converting to pe:", err)
+		return fmt.Errorf("Error converting %s to PE: %v", p.Name, err)
 	}
 	if exe.Machine == BIT32 {
 		p.FileType = "Win32 Exe"
 	} else if exe.Machine == BIT64 {
 		p.FileType = "Win64 Exe"
 	} else {
-
+		p.FileType = "Unknown"
 	}
+	return nil
 }
 
-func (p *BasicProps) fillMagic(file *os.File) {
+func (p *BasicProps) fillMagic(file *os.File) error {
 	exe, err := pe.NewFile(file)
 	if err != nil {
-		log.Fatalln("Error converting to pe:", err)
+		return fmt.Errorf("Error converting %s to PE: %v", p.Name, err)
 	}
 
-	magic := exe.OptionalHeader.(*pe.OptionalHeader32).Magic
-	if magic == PE32 {
-		p.Magic = "PE32"
-	} else if magic == PE32P {
-		p.Magic = "PE32P"
-	} else {
+	switch exe.OptionalHeader.(type) {
+	case *pe.OptionalHeader32:
+		magic := exe.OptionalHeader.(*pe.OptionalHeader32).Magic
+		if magic == PE32 {
+			p.Magic = "PE32"
+		} else if magic == PE32P {
+			p.Magic = "PE32P"
+		} else {
+			p.Magic = "Unknown"
+		}
+	case *pe.OptionalHeader64:
+		magic := exe.OptionalHeader.(*pe.OptionalHeader64).Magic
+		if magic == PE32 {
+			p.Magic = "PE32"
+		} else if magic == PE32P {
+			p.Magic = "PE32P"
+		} else {
+			p.Magic = "Unknown"
+		}
+	default:
 		p.Magic = "Unknown"
 	}
+	return nil
 }
 
-func (p *BasicProps) fillFileSize(f *os.File) {
+func (p *BasicProps) fillFileSize(f *os.File) error {
 	info, err := f.Stat()
 	if err != nil {
-		log.Fatalf("Error calling stat on file: %s \n", err)
+		return fmt.Errorf("Error calling stat on %s: %v", p.Name, err)
 	}
 	p.FSize = strconv.FormatInt(info.Size(), 10)
+	return nil
 }
 
-func (p *BasicProps) fillSymbols(f *os.File) {
+func (p *BasicProps) fillSymbols(f *os.File) error {
 	exe, err := pe.NewFile(f)
 	if err != nil {
-		fmt.Println("Error converting to PE in fillSymbols")
+		return fmt.Errorf("Error converting %s to PE in fillSymbols: %v", p.Name, err)
 	}
 
 	p.Symbols, err = exe.ImportedSymbols()
 	if err != nil {
-		fmt.Println("Error getting imported symbols")
+		return fmt.Errorf("Error getting imported symbols for %s: %v", p.Name, err)
 	}
+	return nil
 }
 
-func (p *BasicProps) fillLibraries(f *os.File) {
+func (p *BasicProps) fillLibraries(f *os.File) error {
 	exe, err := pe.NewFile(f)
 	if err != nil {
-		fmt.Println("Error converting to PE in fillImports")
+		return fmt.Errorf("Error converting %s to PE in fillImports: %v", p.Name, err)
 	}
 
 	p.Libraries, err = exe.ImportedLibraries()
 	if err != nil {
-		fmt.Println("Error getting imported libraries")
+		return fmt.Errorf("Error getting imported libraries for %s: %v", p.Name, err)
 	}
+	return nil
 }
 
-func (p *BasicProps) fillSections(f *os.File) {
+func (p *BasicProps) fillSections(f *os.File) error {
 	exe, err := pe.NewFile(f)
 	if err != nil {
-		fmt.Println("Error converting to pe in fillSections")
+		return fmt.Errorf("Error converting %s to PE in fillSections: %v", p.Name, err)
 	}
 	for _, val := range exe.Sections {
 		p.Sections = append(p.Sections, *val)
 	}
+	return nil
 }
 
 func (p *BasicProps) fillFromModel(f *os.File) {
@@ -192,27 +237,23 @@ func (p *BasicProps) String() string {
 func (p *BasicProps) ExportHTML(outfilePath string) error {
 	t, err := template.ParseFiles("binpage.html.template")
 	if err != nil {
+		fmt.Println("Error parsing binpage template: ", err)
 		return err
 	}
-	outfile := filepath.Base(outfilePath)
 	path := filepath.Dir(outfilePath)
 	os.MkdirAll(path, 0755)
-	bpath, err := os.Getwd()
 	if err != nil {
 		fmt.Println("Error getting working directory")
 	}
-	os.Chdir(path)
-	f, err := os.Create(outfile)
+	f, err := os.Create(outfilePath)
 	if err != nil {
 		fmt.Println("Error creating file", err)
-		return err
+		return fmt.Errorf("Error creating %s: %v", p.Name, err)
 	}
 	defer f.Close()
 	err = t.ExecuteTemplate(f, "binpage.html.template", *p)
 	if err != nil {
-		fmt.Println("Error executing template", err)
-		return err
+		return fmt.Errorf("Error executing template for %s: %v", p.Name, err)
 	}
-	os.Chdir(bpath)
 	return nil
 }

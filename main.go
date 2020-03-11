@@ -1,6 +1,11 @@
+/*
+Ganalyze creates html reports about PE files
+*/
+
 package main
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"os"
@@ -9,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/masonj188/binanalysis/ganalyze/pinfo"
+	"golang.org/x/sync/semaphore"
 )
 
 type LinkName struct {
@@ -19,21 +25,30 @@ type Pathlink struct {
 	LinkNames []LinkName
 }
 
-func processFile(path string, outQueue chan<- LinkName) error {
+func processFile(path string, outQueue chan<- LinkName, sem *semaphore.Weighted) error {
+	sem.Acquire(context.Background(), 1)
+	defer sem.Release(1)
 	f, err := os.Open(path)
 	if err != nil {
 		fmt.Println("Unable to open file: ", err)
+		outQueue <- (LinkName{})
 		return err
 	}
 	defer f.Close()
-	props := pinfo.NewProps(f, true)
+	props, err := pinfo.NewProps(f, true)
+	if err != nil {
+		outQueue <- (LinkName{})
+		return err
+	}
 	outpath := strings.Join([]string{"report/", path, ".html"}, "")
 	err = props.ExportHTML(outpath)
 	if err != nil {
 		fmt.Println("Error exporting html for", props.Name)
+		outQueue <- (LinkName{})
 		return err
 	}
-	outQueue <- LinkName{strings.TrimPrefix(outpath, "report/"), filepath.Base(path)}
+	absPath, err := filepath.Abs(outpath)
+	outQueue <- LinkName{absPath, filepath.Base(path)}
 	return nil
 }
 
@@ -41,6 +56,7 @@ func main() {
 	links := Pathlink{}
 	fileQueue := make([]string, 0)
 	linkchan := make(chan LinkName)
+	sem := semaphore.NewWeighted(100)
 	var wg sync.WaitGroup
 
 	err := filepath.Walk(os.Args[1], func(path string, info os.FileInfo, err error) error {
@@ -61,17 +77,22 @@ func main() {
 		fmt.Println("Error walking filepath", err)
 	}
 
-	for _, file := range fileQueue {
-		wg.Add(1)
-		go processFile(file, linkchan)
-	}
-
 	go func() {
 		for result := range linkchan {
-			links.LinkNames = append(links.LinkNames, result)
-			wg.Done()
+			if result == (LinkName{}) {
+				wg.Done()
+			} else {
+				links.LinkNames = append(links.LinkNames, result)
+				wg.Done()
+			}
 		}
 	}()
+
+	for _, path := range fileQueue {
+		wg.Add(1)
+		go processFile(path, linkchan, sem)
+	}
+
 	wg.Wait()
 
 	t, err := template.ParseFiles("index.html.template")
