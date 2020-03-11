@@ -6,7 +6,7 @@ import ember
 #import numpy as np
 import pandas as pd
 #import pefile as pe
-#from numba import jit
+from numba import jit
 import lightgbm as lgb
 #import matplotlib.pyplot as plt
 #from reports import Report, HTMLTable
@@ -15,6 +15,14 @@ import lightgbm as lgb
 import warnings
 warnings.filterwarnings("ignore")
 
+# speed up computation using jit (cannot run in nopython mode and try-catch requires python 3.7, potentially find new solution)
+@jit(parallel = True)
+def buildPathList(path,pathList,extension, subFolders):
+    for entry in os.scandir(path):
+        if entry.is_file() and entry.path.endswith(extension):
+            pathList.append(entry.path)
+        elif entry.is_dir() and subFolders:   # if its a directory, then repeat process as a nested function
+            pathList = findFilesInFolder(entry.path, pathList, extension, subFolders) 
 
 # Function to recursively search through a directory for a folder of a certain type
 # ** may need to change this implementation to work better with large directories **
@@ -27,21 +35,15 @@ def findFilesInFolder(path, pathList, extension, subFolders = True):
     extension:   File extension to find
     subFolders:  Bool.  If True, find files in all subfolders under path. If False, only searches files in the specified folder
     """
-
     try:   # Trapping a OSError:  File permissions problem I believe
-        for entry in os.scandir(path):
-            if entry.is_file() and entry.path.endswith(extension):
-                pathList.append(entry.path)
-            elif entry.is_dir() and subFolders:   # if its a directory, then repeat process as a nested function
-                pathList = findFilesInFolder(entry.path, pathList, extension, subFolders)
+        buildPathList(path, pathList, extension, subFolders)
     except OSError:
         print('Cannot access ' + path +'. Probably a permissions error')
 
     return pathList
 
-
-# will want to speed up computation later
-#@jit(parallel = True)
+# populate table data for html report
+@jit(parallel = True)
 def getTableData(model, pathListEXE, pathListDLL):
     predData = []
 
@@ -61,9 +63,7 @@ def getTableData(model, pathListEXE, pathListDLL):
     predDF = pd.DataFrame(predData)
     return predDF
 
-
-def main():
-    
+def main():  
     try:
         dir_name = sys.argv[1]
     except IndexError:
@@ -90,10 +90,11 @@ def main():
     # re-format HTML to include cell background color based on prediction
     lines = []
     for line in html_table.splitlines():
+        lnSplit = line.split('<td')
         if 'Benign' in line:
-            line = '      <td bgcolor="lightgreen">Benign</td>'
-        if 'Malware' in line:
-            line = '      <td bgcolor="#ff6666">Malware</td>'
+            line = lnSplit[0] + '<td bgcolor="lightgreen"' + lnSplit[1]
+        elif 'Malware' in line:
+            line = lnSplit[0] + '<td bgcolor="#ff6666"' + lnSplit[1]
         lines.append(line)
     html_table = "".join(lines)
 
