@@ -1,3 +1,6 @@
+package pinfo
+
+var bindata string = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -67,3 +70,21 @@
 		
 </body>
 </html>
+`
+
+var Mainpage string = `
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Ganalyze Report</title>
+	</head>
+	<body>
+		<h1>Files Examined:</h1>
+		<ul>
+		{{ range .LinkNames }}
+			<li><a href={{ .Link }}>{{ .Name }}</a></li>
+		{{ end }}
+		</ul>
+	</body>
+</html>
+`

@@ -1,7 +1,4 @@
-/*
-Ganalyze creates html reports about PE files
-*/
-
+// Ganalyze creates html reports about PE files
 package main
 
 import (
@@ -78,6 +75,7 @@ func main() {
 	}
 
 	go func() {
+		counter := 0
 		for result := range linkchan {
 			if result == (LinkName{}) {
 				wg.Done()
@@ -85,6 +83,8 @@ func main() {
 				links.LinkNames = append(links.LinkNames, result)
 				wg.Done()
 			}
+			counter++
+			fmt.Printf("\r%d/%d Files Processed", counter, len(fileQueue))
 		}
 	}()
 
@@ -94,8 +94,9 @@ func main() {
 	}
 
 	wg.Wait()
-
-	t, err := template.ParseFiles("index.html.template")
+	fmt.Println("")
+	t, err := template.New("index").Parse(pinfo.Mainpage)
+	//t, err := template.ParseFiles("index.html.template")
 	if err != nil {
 		fmt.Println("Error parsing template", err)
 	}
@@ -106,7 +107,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer f.Close()
-	err = t.ExecuteTemplate(f, "index.html.template", links)
+	err = t.ExecuteTemplate(f, "index", links)
 	if err != nil {
 		fmt.Println("Error executing index template", err)
 	}
