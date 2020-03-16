@@ -236,7 +236,6 @@ func (p *BasicProps) String() string {
 
 func (p *BasicProps) ExportHTML(outfilePath string) error {
 	t, err := template.New("infopage").Parse(bindata)
-	//t, err := template.ParseFiles("binpage.html.template")
 	if err != nil {
 		fmt.Println("Error parsing binpage template: ", err)
 		return err
@@ -252,7 +251,6 @@ func (p *BasicProps) ExportHTML(outfilePath string) error {
 		return fmt.Errorf("Error creating %s: %v", p.Name, err)
 	}
 	defer f.Close()
-	//err = t.ExecuteTemplate(f, "binpage.html.template", *p)
 	err = t.ExecuteTemplate(f, "infopage", *p)
 	if err != nil {
 		return fmt.Errorf("Error executing template for %s: %v", p.Name, err)
