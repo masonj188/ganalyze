@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/masonj188/ganalyze)](https://goreportcard.com/report/github.com/masonj188/ganalyze)
+
 # Ganalyze
 Ganalyze generates a set of html files that give information about given PE files and use an ML model to make a determination on whether or not the file is malicious or bengign.
 
