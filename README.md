@@ -5,6 +5,8 @@ Ganalyze generates a set of html files that give information about given PE file
 
 ## Building from Source
 
+In order to clone this repo, you must have [git-lfs](https://git-lfs.github.com/) installed.
+
 Building and running Ganalyze should be done in a Python 3.6 virtual environment. Run `go build` from the repository's root directory, then `cd python` and run `./installember.sh`.
 
 ## Usage
