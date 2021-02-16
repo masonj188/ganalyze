@@ -5,11 +5,7 @@ Ganalyze generates a set of html files that give information about given PE file
 
 ## Building from Source
 
-Binaries are provided for MacOS and Linux, Ganalyze is not tested on Windows. If building from source, ensure you have a working Go environment and run `go build` from the repository's root directory.
-
-## Python Requirements
-
-Ganalyze uses multiple Python libraries and has specific Python version requirements.  We recommend building a Python/Conda virtual environment to run Ganalyze. The required Python version is `3.6`. After building a virtual environment using Python 3.6, run `pip install -r requirements.txt` from the root directory of the repository to install the Python imports.
+Building and running Ganalyze should be done in a Python 3.6 virtual environment. Run `go build` from the repository's root directory, then `cd python` and run `./installember.sh`.
 
 ## Usage
 

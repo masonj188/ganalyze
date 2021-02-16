@@ -8,13 +8,11 @@ var bindata string = `
 </head>
 <body>
 	<h1>{{ .Name }}</h1>
-	<!--
 	{{ if .ModelRes }}
 	<h2>Determined Malicious: Yes</h2>
 	{{ else }}
 	<h2>Determined Malicious: No</h2>
 	{{ end }}
-	-->
 	<h2>Basic Properties</h2>
 		<table>
 			<tr>

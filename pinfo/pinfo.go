@@ -74,12 +74,10 @@ func NewProps(file *os.File, useModel bool) (*BasicProps, error) {
 	if err != nil {
 		return nil, err
 	}
-	/*
-		props.UsingModel = useModel
-		if useModel {
-			props.fillFromModel(file)
-		}
-	*/
+	props.UsingModel = useModel
+	if useModel {
+		props.fillFromModel(file)
+	}
 
 	return &props, nil
 }
@@ -216,7 +214,7 @@ func (p *BasicProps) fillFromModel(f *os.File) {
 	if err != nil {
 		fmt.Println("Error running model", err)
 	}
-	res, err := strconv.Atoi(string(out[:1]))
+	res, err := strconv.Atoi(string(out))
 	if err != nil {
 		fmt.Println("Error converting stdout to an int", err)
 	}
