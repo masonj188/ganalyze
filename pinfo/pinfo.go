@@ -1,6 +1,7 @@
 package pinfo
 
 import (
+	"bytes"
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
@@ -14,6 +15,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 // Consts for Magic numbers and Machine Codes
@@ -210,11 +212,14 @@ func (p *BasicProps) fillFromModel(f *os.File) {
 	fullPath, err := filepath.Abs(f.Name())
 	pmodel := exec.Command("python3", "prediction.py", fullPath)
 	pmodel.Dir = "python"
-	out, err := pmodel.Output()
+	var output bytes.Buffer
+	pmodel.Stderr = &output
+	pmodel.Stdout = nil
+	err = pmodel.Run()
 	if err != nil {
 		fmt.Println("Error running model", err)
 	}
-	res, err := strconv.Atoi(string(out))
+	res, err := strconv.Atoi(strings.TrimSuffix(string(output.Bytes()), "\n"))
 	if err != nil {
 		fmt.Println("Error converting stdout to an int", err)
 	}
