@@ -37,15 +37,15 @@ func processFile(path string, outQueue chan<- LinkName, sem *semaphore.Weighted)
 		outQueue <- (LinkName{})
 		return err
 	}
-	outpath := strings.Join([]string{"report/", path, ".html"}, "")
+	outpath := strings.Join([]string{path, ".html"}, "")
 	err = props.ExportHTML(outpath)
 	if err != nil {
 		fmt.Println("Error exporting html for", props.Name)
 		outQueue <- (LinkName{})
 		return err
 	}
-	absPath, err := filepath.Abs(outpath)
-	outQueue <- LinkName{absPath, filepath.Base(path)}
+	//absPath, err := filepath.Abs(outpath)
+	outQueue <- LinkName{outpath, filepath.Base(path)}
 	return nil
 }
 
