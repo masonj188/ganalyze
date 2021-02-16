@@ -9,5 +9,3 @@ cd ember
 pip install --upgrade pip
 pip install -r requirements.txt
 python setup.py install
-pip uninstall llvmlite -y
-pip install llvmlite
